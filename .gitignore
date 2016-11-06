@@ -7,3 +7,5 @@ target
 /.settings
 /RUNNING_PID
 tasks.md
+node_modules/
+public/javascripts/compiled/
