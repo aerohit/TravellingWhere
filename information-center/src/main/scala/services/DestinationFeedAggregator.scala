@@ -7,7 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, JsValue, Json}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,9 +16,11 @@ import scala.concurrent.Future
 class DestinationFeedAggregator extends Actor {
   implicit val system = context.system
   implicit val materializer = ActorMaterializer()
-  implicit val residentFormat = Json.format[GeoCoordinate]
+  implicit val geoCoordinateFormat = Json.format[GeoCoordinate]
+  implicit val geoCoordinateWithCountFormat = Json.format[GeoCodeWithCount]
 
   private val subscribers = new ArrayBuffer[ActorRef]()
+  private var destinationCounter = Map.empty[GeoCoordinate, Int]
   private val consumerSettings = ConsumerSettings(system, new StringDeserializer, new StringDeserializer)
     .withBootstrapServers("localhost:9092")
     .withGroupId("madebar")
@@ -28,10 +30,12 @@ class DestinationFeedAggregator extends Actor {
     Consumer.plainSource(consumerSettings, Subscriptions.topics("barmade"))
       .mapAsync(1) { r =>
         println(s"Read record ${r.value()}")
-        val geo = GeoCoordinate.parseFromString(r.value())
-        println(s"Geo: $geo")
-        val obj = Json.toJson(geo)
-//        val obj = r.value()
+        val geoOpt: Option[GeoCoordinate] = GeoCoordinate.parseFromString(r.value())
+        println(s"Geo: $geoOpt")
+        updateCount(geoOpt)
+        val obj: JsValue = getStateAsJson
+        println(obj)
+        //        val obj = r.value()
         subscribers.foreach(s => s ! obj)
         // TODO: This I think is futile. Figure out a better way.
         Future(obj)
@@ -50,6 +54,20 @@ class DestinationFeedAggregator extends Actor {
       sender ! "Hello from the RemoteActor"
   }
 
+  private def updateCount(geoOpt: Option[GeoCoordinate]) = {
+    geoOpt.foreach { geo =>
+      val currentCount = destinationCounter.getOrElse(geo, 0)
+      destinationCounter = destinationCounter.updated(geo, currentCount + 1)
+    }
+  }
+
+  private def getStateAsJson: JsValue = {
+    val counts: List[JsValue] = destinationCounter.map {case (g, c) =>
+        GeoCodeWithCount(g.country, g.city, g.latitude, g.longitude, c)
+    }.map(Json.toJson(_)).toList
+    JsArray(counts)
+  }
+
   private def subscribe(out: ActorRef): Unit = {
     subscribers += out
   }
@@ -60,6 +78,8 @@ class DestinationFeedAggregator extends Actor {
       subscribers.remove(index)
     }
   }
+
+  case class GeoCodeWithCount(country: String, city: String, latitude: String, longitude: String, count: Int)
 }
 
 object DestinationFeedAggregator extends App {

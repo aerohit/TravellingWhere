@@ -2,7 +2,7 @@ package services
 
 import scala.util.Try
 
-case class GeoCoordinate(country: String, city: String, latitude: Double, longitude: Double) {
+case class GeoCoordinate(country: String, city: String, latitude: String, longitude: String) {
   def serializeToString(): String =
     s"$country|$city|$latitude|$longitude"
 }
@@ -10,16 +10,13 @@ case class GeoCoordinate(country: String, city: String, latitude: Double, longit
 object GeoCoordinate {
   def apply(line: String): GeoCoordinate = {
     val cols = line.split('|').toList
-    GeoCoordinate(cols(1), cols(2), cols(4).toDouble, cols(5).toDouble)
+    GeoCoordinate(cols(1), cols(2), cols(4), cols(5))
   }
 
   def parseFromString(s: String): Option[GeoCoordinate] = {
     Try {
       val fields = s.split('|')
-      println("Parsing")
-      println(s)
-      println(fields)
-      GeoCoordinate(fields(0), fields(1), fields(2).toDouble, fields(3).toDouble)
+      GeoCoordinate(fields(0), fields(1), fields(2), fields(3))
     }.toOption
   }
 }
