@@ -6,7 +6,7 @@ import play.api.libs.json.Json
 
 import scala.collection.mutable.ArrayBuffer
 
-class LiveStatusFeed extends Actor {
+class DestinationsFeedManager extends Actor {
   val remote = context.actorSelection("akka.tcp://HelloRemoteSystem@127.0.0.1:5150/user/RemoteActor")
 
   override def preStart() = {
@@ -16,15 +16,15 @@ class LiveStatusFeed extends Actor {
   def receive = {
     case msg: String =>
       println(s"LocalActor received message: '$msg'")
-      LiveStatusFeed.notifySubscribers(msg)
+      DestinationsFeedManager.notifySubscribers(msg)
   }
 }
 
-object LiveStatusFeed {
+object DestinationsFeedManager {
   private val subscribers = new ArrayBuffer[ActorRef]()
   // This should run in the same actor system as the HomeController
   implicit val system = ActorSystem("LiveStatusFeed")
-  val localActor = system.actorOf(Props[LiveStatusFeed], name = "LiveStatusFeed")
+  val localActor = system.actorOf(Props[DestinationsFeedManager], name = "LiveStatusFeed")
 
   def notifySubscribers(message: String) =  {
     subscribers.foreach(s => s ! Json.obj("message" -> message))

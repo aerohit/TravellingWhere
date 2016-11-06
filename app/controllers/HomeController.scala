@@ -7,7 +7,7 @@ import akka.stream.Materializer
 import play.api.libs.json._
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
-import services.LiveStatusWSConnection
+import services.DestinationsFeedWSConnection
 
 @Singleton
 class HomeController @Inject() (implicit system: ActorSystem, materializer: Materializer) extends Controller {
@@ -16,6 +16,6 @@ class HomeController @Inject() (implicit system: ActorSystem, materializer: Mate
   }
 
   def liveState = WebSocket.accept[JsValue, JsValue] { request =>
-    ActorFlow.actorRef(out => LiveStatusWSConnection.props(out))
+    ActorFlow.actorRef(out => DestinationsFeedWSConnection.props(out))
   }
 }
