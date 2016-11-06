@@ -9,7 +9,8 @@ lazy val commonSettings = Seq(
 resolvers += Resolver.bintrayRepo("cakesolutions", "maven")
 
 libraryDependencies ++= Seq(
-  "net.cakesolutions" %% "scala-kafka-client" % "0.10.0.0",
+//  "net.cakesolutions" %% "scala-kafka-client" % "0.10.0.0",
+  "com.typesafe.akka" %% "akka-stream-kafka" % "0.13",
   "com.typesafe.akka" %% "akka-actor" % "2.3.7",
   "com.typesafe.akka" %% "akka-remote" % "2.3.7"
 )
