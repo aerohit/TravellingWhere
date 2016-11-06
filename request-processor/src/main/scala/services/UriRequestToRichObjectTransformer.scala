@@ -17,15 +17,15 @@ object UriRequestToRichObjectTransformer extends App {
 
   val consumerSettings = ConsumerSettings(system, new StringDeserializer, new StringDeserializer)
     .withBootstrapServers("localhost:9092")
-    .withGroupId("foobar")
+    .withGroupId("madebar")
     .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
 
   val producerSettings = ProducerSettings(system, new StringSerializer, new StringSerializer)
     .withBootstrapServers("localhost:9092")
 
-  Consumer.plainSource(consumerSettings, Subscriptions.topics("foobar"))
+  Consumer.plainSource(consumerSettings, Subscriptions.topics("madebar"))
     .mapAsync(1) { r =>
       println(s"Read record ${r.value()}")
-      Future(new ProducerRecord[String, String]("barfoo", r.value().reverse))
+      Future(new ProducerRecord[String, String]("barmade", r.value().reverse))
     }.runWith(Producer.plainSink(producerSettings))
 }

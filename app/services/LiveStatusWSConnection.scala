@@ -13,6 +13,9 @@ class LiveStatusWSConnection(out: ActorRef) extends Actor {
       Logger.info(s"Received an untyped message $x")
       out ! Json.obj("text" -> "Making a subscription")
       LiveStatusFeed.subscribe(out)
+    case unhandled =>
+      println("UNHANDLED MESSAGE")
+      println(unhandled)
   }
 
   override def postStop() {
