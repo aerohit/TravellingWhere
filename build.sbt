@@ -28,6 +28,7 @@ lazy val informationCenter = project
   .in(file("information-center"))
   .settings(commonSettings: _*)
   .settings(libraryDependencies ++= Seq(
+    "com.typesafe.akka" %% "akka-stream-kafka" % "0.13",
     "com.typesafe.akka" %% "akka-actor" % "2.3.7",
     "com.typesafe.akka" %% "akka-remote" % "2.3.7"
   ))
