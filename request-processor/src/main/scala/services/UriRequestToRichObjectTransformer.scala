@@ -26,6 +26,8 @@ object UriRequestToRichObjectTransformer extends App {
   Consumer.plainSource(consumerSettings, Subscriptions.topics("madebar"))
     .mapAsync(1) { r =>
       println(s"Read record ${r.value()}")
-      Future(new ProducerRecord[String, String]("barmade", r.value().reverse))
+      // TODO: there shouldn't be a need to call get here, check if filter is possible
+      val geo = GeoCoordinatesService.enrich(r.value()).get
+      Future(new ProducerRecord[String, String]("barmade", geo.serializeToString()))
     }.runWith(Producer.plainSink(producerSettings))
 }

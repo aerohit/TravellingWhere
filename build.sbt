@@ -15,7 +15,14 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-remote" % "2.3.7"
 )
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala).settings(commonSettings: _*)
+lazy val common = project
+  .in(file("common"))
+  .settings(commonSettings: _*)
+
+lazy val root = (project in file("."))
+  .enablePlugins(PlayScala)
+  .settings(commonSettings: _*)
+  .dependsOn(common)
 
 lazy val requestsProcessor = project
   .in(file("request-processor"))
@@ -23,6 +30,7 @@ lazy val requestsProcessor = project
   .settings(libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-stream-kafka" % "0.13"
   ))
+  .dependsOn(common)
 
 lazy val informationCenter = project
   .in(file("information-center"))
@@ -30,6 +38,8 @@ lazy val informationCenter = project
   .settings(libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-stream-kafka" % "0.13",
     "com.typesafe.akka" %% "akka-actor" % "2.3.7",
-    "com.typesafe.akka" %% "akka-remote" % "2.3.7"
+    "com.typesafe.akka" %% "akka-remote" % "2.3.7",
+    "com.typesafe.play" %% "play-json" % "2.5.9"
   ))
+  .dependsOn(common)
 

@@ -7,6 +7,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
+import play.api.libs.json.Json
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -15,6 +16,8 @@ import scala.concurrent.Future
 class DestinationFeedAggregator extends Actor {
   implicit val system = context.system
   implicit val materializer = ActorMaterializer()
+  implicit val residentFormat = Json.format[GeoCoordinate]
+
   private val subscribers = new ArrayBuffer[ActorRef]()
   private val consumerSettings = ConsumerSettings(system, new StringDeserializer, new StringDeserializer)
     .withBootstrapServers("localhost:9092")
@@ -25,7 +28,10 @@ class DestinationFeedAggregator extends Actor {
     Consumer.plainSource(consumerSettings, Subscriptions.topics("barmade"))
       .mapAsync(1) { r =>
         println(s"Read record ${r.value()}")
-        val obj = r.value()
+        val geo = GeoCoordinate.parseFromString(r.value())
+        println(s"Geo: $geo")
+        val obj = Json.toJson(geo)
+//        val obj = r.value()
         subscribers.foreach(s => s ! obj)
         // TODO: This I think is futile. Figure out a better way.
         Future(obj)

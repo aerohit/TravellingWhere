@@ -2,7 +2,7 @@ package services
 
 import akka.actor.{ActorRef, _}
 import play.api.Logger
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -17,6 +17,9 @@ class DestinationsFeedManager extends Actor {
     case msg: String =>
       println(s"LocalActor received message: '$msg'")
       DestinationsFeedManager.notifySubscribers(msg)
+    case msg: JsValue =>
+      println(s"LocalActor received message: '$msg'")
+      DestinationsFeedManager.notifySubscribers(msg)
   }
 }
 
@@ -28,6 +31,10 @@ object DestinationsFeedManager {
 
   def notifySubscribers(message: String) =  {
     subscribers.foreach(s => s ! Json.obj("message" -> message))
+  }
+
+  def notifySubscribers(json: JsValue) =  {
+    subscribers.foreach(s => s ! Json.obj("message" -> json))
   }
 
   def subscribe(out: ActorRef): Unit = {
