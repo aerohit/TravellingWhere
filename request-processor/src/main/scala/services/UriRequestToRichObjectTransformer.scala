@@ -11,7 +11,7 @@ import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializ
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-object RequestProcessor extends App {
+object UriRequestToRichObjectTransformer extends App {
   implicit val system = ActorSystem("Request-Processor")
   implicit val materializer = ActorMaterializer()
 
