@@ -20,11 +20,5 @@ class DestinationsFeedManager extends Actor {
 }
 
 object DestinationsFeedManager {
-  // TODO: There surely must be a better way to bring this actor system up.
-  def apply(implicit system: ActorSystem) = {
-    println("*********************************************")
-    println("INITIALIZATION CALLED")
-    println("*********************************************")
-    system.actorOf(Props[DestinationsFeedManager], name = "LiveStatusFeed")
-  }
+  def props = Props[DestinationsFeedManager]
 }

@@ -7,7 +7,7 @@ import akka.stream.Materializer
 import play.api.libs.json._
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
-import services.{DestinationsFeedManager, DestinationsFeedWSConnection, KafkaProducerService}
+import services.{DestinationsFeedWSConnection, KafkaProducerService}
 
 @Singleton
 class HomeController @Inject()(
@@ -16,7 +16,6 @@ class HomeController @Inject()(
   environment: play.api.Environment,
   configuration: play.api.Configuration) extends Controller {
   private val logQueue = KafkaProducerService()
-  DestinationsFeedManager(system)
 
   def index = Action {
     Ok(views.html.index("Your new application is ready."))
