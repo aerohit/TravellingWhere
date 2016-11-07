@@ -16,7 +16,7 @@ class DestinationsFeedWSConnection(out: ActorRef) extends Actor {
 
   override def postStop() {
     Logger.info("Client unsubscribing from stream")
-    DestinationsFeedManager.unsubscribe(out)
+    DestinationsFeedSubscriptionPool.unsubscribe(out)
   }
 
   private def parseAndHandle(jsonRequest: JsValue) = {
@@ -40,10 +40,10 @@ class DestinationsFeedWSConnection(out: ActorRef) extends Actor {
   private def handleRequest(request: DestinationFeedProtocol) = request match {
     case DestinationFeedSubscriptionRequest =>
       out ! Json.obj("responseType" -> "SUBSCRIBING")
-      DestinationsFeedManager.subscribe(out)
+      DestinationsFeedSubscriptionPool.subscribe(out)
 
     case DestinationFeedUnSubscriptionRequest =>
-      DestinationsFeedManager.unsubscribe(out)
+      DestinationsFeedSubscriptionPool.unsubscribe(out)
 
     case DestinationFeedUnknownRequest =>
       out ! Json.obj("responseType" -> "UNKNOWN_REQUEST")

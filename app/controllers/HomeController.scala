@@ -7,9 +7,7 @@ import akka.stream.Materializer
 import play.api.libs.json._
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
-import services.{KafkaProducerService, DestinationsFeedWSConnection}
-
-import scala.io.Source
+import services.{DestinationsFeedManager, DestinationsFeedWSConnection, KafkaProducerService}
 
 @Singleton
 class HomeController @Inject()(
@@ -17,9 +15,8 @@ class HomeController @Inject()(
   materializer: Materializer,
   environment: play.api.Environment,
   configuration: play.api.Configuration) extends Controller {
-  private val stream = getClass.getResourceAsStream("/geocoordinates.csv")
-  private val lines = Source.fromInputStream(stream).getLines.toList
   private val logQueue = KafkaProducerService()
+  DestinationsFeedManager(system)
 
   def index = Action {
     Ok(views.html.index("Your new application is ready."))
@@ -32,7 +29,7 @@ class HomeController @Inject()(
   def cityPage(country: String, city: String) = Action { request =>
     println(request.path)
     logQueue.publish("madebar", request.path)
-//    println(configuration.getString("feedAggregatorActorSystemName"))
-    Ok(lines(1))
+    //    println(configuration.getString("feedAggregatorActorSystemName"))
+    Ok(s"You requested $city in $country")
   }
 }
