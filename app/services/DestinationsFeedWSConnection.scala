@@ -1,21 +1,17 @@
 package services
 
-import akka.actor.{Props, Actor, ActorRef}
+import akka.actor.{Actor, ActorRef, Props}
 import play.api.Logger
 import play.api.libs.json.{JsValue, Json}
 
-case class StatusFeedUpdate(msg: String)
-
 class DestinationsFeedWSConnection(out: ActorRef) extends Actor {
+
   def receive = {
-    case x: JsValue =>
-      // for now, just assuming that any request from the client is for subscription only
-      Logger.info(s"Received an untyped message $x")
-      out ! Json.obj("text" -> "Making a subscription")
-      DestinationsFeedManager.subscribe(out)
-    case unhandled =>
+    case jsonRequest: JsValue =>
+      parseAndHandle(jsonRequest)
+    case other =>
       println("UNHANDLED MESSAGE")
-      println(unhandled)
+      println(other)
   }
 
   override def postStop() {
@@ -23,8 +19,46 @@ class DestinationsFeedWSConnection(out: ActorRef) extends Actor {
     DestinationsFeedManager.unsubscribe(out)
   }
 
+  private def parseAndHandle(jsonRequest: JsValue) = {
+    handleRequest(parseRequest(jsonRequest))
+  }
+
+  private def parseRequest(jsonRequest: JsValue): DestinationFeedProtocol = {
+    val requestType = (jsonRequest \ "requestType").asOpt[String]
+    requestType match {
+      case Some("SUBSCRIBE") =>
+        DestinationFeedSubscriptionRequest
+
+      case Some("UNSUBSCRIBE") =>
+        DestinationFeedUnSubscriptionRequest
+
+      case _ =>
+        DestinationFeedUnknownRequest
+    }
+  }
+
+  private def handleRequest(request: DestinationFeedProtocol) = request match {
+    case DestinationFeedSubscriptionRequest =>
+      out ! Json.obj("responseType" -> "SUBSCRIBING")
+      DestinationsFeedManager.subscribe(out)
+
+    case DestinationFeedUnSubscriptionRequest =>
+      DestinationsFeedManager.unsubscribe(out)
+
+    case DestinationFeedUnknownRequest =>
+      out ! Json.obj("responseType" -> "UNKNOWN_REQUEST")
+  }
+
 }
 
 object DestinationsFeedWSConnection {
   def props(out: ActorRef) = Props(new DestinationsFeedWSConnection(out))
 }
+
+sealed trait DestinationFeedProtocol
+
+case object DestinationFeedSubscriptionRequest extends DestinationFeedProtocol
+
+case object DestinationFeedUnSubscriptionRequest extends DestinationFeedProtocol
+
+case object DestinationFeedUnknownRequest extends DestinationFeedProtocol
