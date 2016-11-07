@@ -9,7 +9,7 @@ trait ApplicationActors
 class Actors @Inject()(system: ActorSystem) extends ApplicationActors {
   system.actorOf(
     props = DestinationsFeedManager.props,
-    name = DestinationsFeedManager.toString
+    name = "DestinationsFeedManager"
   )
 }
 

@@ -1,14 +1,17 @@
 package services
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorRef, ActorSelection, Props}
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
 
-class DestinationsFeedWSConnection(out: ActorRef) extends Actor {
+class DestinationsFeedWSConnection(destinationFeedManager: ActorSelection, out: ActorRef)
+  extends Actor with DestinationFeedProtocolParser with FeedResponseGenerator {
 
   def receive = {
     case jsonRequest: JsValue =>
       parseAndHandle(jsonRequest)
+    case SubscriptionFeed(json) =>
+      out ! constructJsonResponse(LiveFeed(json))
     case other =>
       println("UNHANDLED MESSAGE")
       println(other)
@@ -16,49 +19,27 @@ class DestinationsFeedWSConnection(out: ActorRef) extends Actor {
 
   override def postStop() {
     Logger.info("Client unsubscribing from stream")
-    DestinationsFeedSubscriptionPool.unsubscribe(out)
+    destinationFeedManager ! UnSubscribeToFeed
   }
 
   private def parseAndHandle(jsonRequest: JsValue) = {
     handleRequest(parseRequest(jsonRequest))
   }
 
-  private def parseRequest(jsonRequest: JsValue): DestinationFeedProtocol = {
-    val requestType = (jsonRequest \ "requestType").asOpt[String]
-    requestType match {
-      case Some("SUBSCRIBE") =>
-        DestinationFeedSubscriptionRequest
-
-      case Some("UNSUBSCRIBE") =>
-        DestinationFeedUnSubscriptionRequest
-
-      case _ =>
-        DestinationFeedUnknownRequest
-    }
-  }
-
   private def handleRequest(request: DestinationFeedProtocol) = request match {
     case DestinationFeedSubscriptionRequest =>
-      out ! Json.obj("responseType" -> "SUBSCRIBING")
-      DestinationsFeedSubscriptionPool.subscribe(out)
+      out ! constructJsonResponse(Subscribing)
+      destinationFeedManager ! SubscribeToFeed
 
     case DestinationFeedUnSubscriptionRequest =>
-      DestinationsFeedSubscriptionPool.unsubscribe(out)
+      destinationFeedManager ! UnSubscribeToFeed
 
     case DestinationFeedUnknownRequest =>
-      out ! Json.obj("responseType" -> "UNKNOWN_REQUEST")
+      out ! constructJsonResponse(UnknownRequest)
   }
-
 }
 
 object DestinationsFeedWSConnection {
-  def props(out: ActorRef) = Props(new DestinationsFeedWSConnection(out))
+  def props(destinationFeedManager: ActorSelection, out: ActorRef) =
+    Props(new DestinationsFeedWSConnection(destinationFeedManager, out))
 }
-
-sealed trait DestinationFeedProtocol
-
-case object DestinationFeedSubscriptionRequest extends DestinationFeedProtocol
-
-case object DestinationFeedUnSubscriptionRequest extends DestinationFeedProtocol
-
-case object DestinationFeedUnknownRequest extends DestinationFeedProtocol

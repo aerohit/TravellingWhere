@@ -16,13 +16,14 @@ class HomeController @Inject()(
   environment: play.api.Environment,
   configuration: play.api.Configuration) extends Controller {
   private val logQueue = KafkaProducerService()
+  lazy val destinationFeedManager = system.actorSelection("akka://application/user/DestinationsFeedManager")
 
   def index = Action {
     Ok(views.html.index("Your new application is ready."))
   }
 
   def liveState = WebSocket.accept[JsValue, JsValue] { request =>
-    ActorFlow.actorRef(out => DestinationsFeedWSConnection.props(out))
+    ActorFlow.actorRef(out => DestinationsFeedWSConnection.props(destinationFeedManager, out))
   }
 
   def cityPage(country: String, city: String) = Action { request =>
