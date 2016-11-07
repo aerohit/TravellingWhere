@@ -15,6 +15,7 @@ class HomeController @Inject()(
   materializer: Materializer,
   environment: play.api.Environment,
   configuration: play.api.Configuration) extends Controller {
+  // TODO: Have this be injected
   private val logQueue = KafkaProducerService()
   lazy val destinationFeedManager = system.actorSelection("akka://application/user/DestinationsFeedManager")
 
@@ -27,9 +28,7 @@ class HomeController @Inject()(
   }
 
   def cityPage(country: String, city: String) = Action { request =>
-    println(request.path)
     logQueue.publish("madebar", request.path)
-    //    println(configuration.getString("feedAggregatorActorSystemName"))
     Ok(s"You requested $city in $country")
   }
 }
