@@ -12,7 +12,7 @@ case object UnSubscribeToFeed extends DestinationsFeedProtocol
 case class SubscriptionFeed(json: JsValue) extends DestinationsFeedProtocol
 
 class DestinationsFeedManager extends Actor {
-  private val remote = context.actorSelection("akka.tcp://HelloRemoteSystem@127.0.0.1:5150/user/RemoteActor")
+  private val remote = context.actorSelection("akka.tcp://DestinationsFeedManager@127.0.0.1:5150/user/DestinationFeedAggregatorActor")
   private val subscribers = new ArrayBuffer[ActorRef]()
 
   override def preStart() = {

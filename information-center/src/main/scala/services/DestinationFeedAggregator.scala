@@ -83,7 +83,7 @@ class DestinationFeedAggregator extends Actor {
 }
 
 object DestinationFeedAggregator extends App {
-  val system = ActorSystem("HelloRemoteSystem")
-  val remoteActor = system.actorOf(Props[DestinationFeedAggregator], name = "RemoteActor")
+  val system = ActorSystem("DestinationsFeedManager")
+  val remoteActor = system.actorOf(Props[DestinationFeedAggregator], name = "DestinationFeedAggregatorActor")
   remoteActor ! "The RemoteActor is alive"
 }
