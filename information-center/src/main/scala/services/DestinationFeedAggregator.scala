@@ -1,48 +1,27 @@
 package services
 
+import actors.SubscribableActor
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.kafka.scaladsl.Consumer
-import akka.kafka.{ConsumerSettings, Subscriptions}
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.Sink
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
 import play.api.libs.json.{JsArray, JsValue, Json}
 
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 
-class DestinationFeedAggregator extends Actor {
-  implicit val system = context.system
-  implicit val materializer = ActorMaterializer()
-  implicit val geoCoordinateFormat = Json.format[GeoCoordinate]
-  implicit val geoCoordinateWithCountFormat = Json.format[GeoCodeWithCount]
+class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends Actor with SubscribableActor[JsValue] {
+  import formatters.JsonFormatters._
 
-  private val subscribers = new ArrayBuffer[ActorRef]()
   private var destinationCounter = Map.empty[GeoCoordinate, Int]
-  private val consumerSettings = ConsumerSettings(system, new StringDeserializer, new StringDeserializer)
-    .withBootstrapServers("localhost:9092")
-    .withGroupId("madebar")
-    .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
 
   override def preStart() = {
-    Consumer.plainSource(consumerSettings, Subscriptions.topics("barmade"))
-      .mapAsync(1) { r =>
-        println(s"Read record ${r.value()}")
-        val geoOpt: Option[GeoCoordinate] = GeoCoordinate.parseFromString(r.value())
-        println(s"Geo: $geoOpt")
-        updateCount(geoOpt)
-        val obj: JsValue = getStateAsJson
-        println(obj)
-        //        val obj = r.value()
-        subscribers.foreach(s => s ! obj)
-        // TODO: This I think is futile. Figure out a better way.
-        Future(obj)
-      }.runWith(Sink.ignore)
+    geoCoordinatesKafkaConsumer ! RegisterListener
+  }
+
+  override def postStop() = {
+    geoCoordinatesKafkaConsumer ! UnRegisterListener
   }
 
   override def receive = {
+    case Some(geo: GeoCoordinate) =>
+      notifySubscribers(updatedState(geo))
     case "subscribe" =>
       println("A SUBSCRIPTION request")
       subscribe(sender())
@@ -52,38 +31,43 @@ class DestinationFeedAggregator extends Actor {
     case msg: String =>
       println(s"RemoteActor received message '$msg'")
       sender ! "Hello from the RemoteActor"
+    case other =>
+      println(s"Unhandled Message: $other")
   }
 
-  private def updateCount(geoOpt: Option[GeoCoordinate]) = {
-    geoOpt.foreach { geo =>
-      val currentCount = destinationCounter.getOrElse(geo, 0)
-      destinationCounter = destinationCounter.updated(geo, currentCount + 1)
-    }
+  def updatedState(geo: GeoCoordinate): JsValue = {
+    updateCount(geo)
+    getStateAsJson
+  }
+
+  private def updateCount(geo: GeoCoordinate): Unit = {
+    val currentCount = destinationCounter.getOrElse(geo, 0)
+    destinationCounter = destinationCounter.updated(geo, currentCount + 1)
   }
 
   private def getStateAsJson: JsValue = {
-    val counts: List[JsValue] = destinationCounter.map {case (g, c) =>
-        GeoCodeWithCount(g.country, g.city, g.latitude, g.longitude, c)
+    val counts: List[JsValue] = destinationCounter.map { case (g, c) =>
+      GeoCodeWithCount(g.country, g.city, g.latitude, g.longitude, c)
     }.map(Json.toJson(_)).toList
     JsArray(counts)
   }
 
-  private def subscribe(out: ActorRef): Unit = {
-    subscribers += out
-  }
-
-  private def unsubscribe(subscriber: ActorRef): Unit = {
-    val index = subscribers.indexWhere(_ == subscriber)
-    if (index > 0) {
-      subscribers.remove(index)
-    }
-  }
-
-  case class GeoCodeWithCount(country: String, city: String, latitude: String, longitude: String, count: Int)
 }
 
 object DestinationFeedAggregator extends App {
-  val system = ActorSystem("DestinationsFeedManager")
-  val remoteActor = system.actorOf(Props[DestinationFeedAggregator], name = "DestinationFeedAggregatorActor")
-  remoteActor ! "The RemoteActor is alive"
+  implicit val system = ActorSystem("DestinationsFeedManager")
+  implicit val materializer = ActorMaterializer()
+  val geoCoordinatesKafkaConsumer = system.actorOf(
+    Props(new GeoCoordinatesKafkaConsumer),
+    name = "GeoCoordinatesKafkaConsumer"
+  )
+
+  val feedAggregator = system.actorOf(
+    Props(new DestinationFeedAggregator(geoCoordinatesKafkaConsumer)),
+    name = "DestinationFeedAggregatorActor"
+  )
+
+  geoCoordinatesKafkaConsumer ! StartConsuming
 }
+
+case class GeoCodeWithCount(country: String, city: String, latitude: String, longitude: String, count: Int)

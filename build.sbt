@@ -18,6 +18,9 @@ libraryDependencies ++= Seq(
 lazy val common = project
   .in(file("common"))
   .settings(commonSettings: _*)
+  .settings(libraryDependencies ++= Seq(
+    "com.typesafe.akka" %% "akka-actor" % "2.3.7"
+  ))
 
 lazy val root = (project in file("."))
   .enablePlugins(PlayScala)
