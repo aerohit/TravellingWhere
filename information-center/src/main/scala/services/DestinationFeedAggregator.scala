@@ -29,9 +29,6 @@ class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends A
     case DestinationFeedAggregatorUnSubscribe =>
       println("A UNSUBSCRIPTION request")
       unsubscribe(sender())
-    case msg: String =>
-      println(s"RemoteActor received message '$msg'")
-      sender ! "Hello from the RemoteActor"
     case other =>
       println(s"Unhandled Message: $other")
   }
