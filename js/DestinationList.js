@@ -13,7 +13,7 @@ class DestinationList extends Component {
       return d.count;
     }).reduce(function(d1, d2) {
       return d1 + d2;
-    });
+    }, 0);
 
     let destinationNodes = listData.map((d) => {
       return (
@@ -23,10 +23,19 @@ class DestinationList extends Component {
 
     return (
       <div className="DestinationList">
-        <div className="destinationcount">
-          Total destinations = {totalResults}
-        </div>
-        { destinationNodes }
+        <h3>Total searches = {totalResults}</h3>
+        <table className="u-full-width">
+          <thead>
+            <tr>
+              <th>Country</th>
+              <th>City</th>
+              <th>Visitors</th>
+            </tr>
+          </thead>
+          <tbody>
+            { destinationNodes }
+          </tbody>
+        </table>
       </div>
     );
   }

@@ -8,20 +8,6 @@ class DestinationsBox extends Component {
     this.state = {
       "responseType": "LIVE_FEED",
       "responseData":[
-        {
-          "country":"Norway",
-          "city":"Oslo",
-          "latitude":"59.91273",
-          "longitude":"10.74609",
-          "count":88
-        },
-        {
-          "country":"Ukraine",
-          "city":"Kiev",
-          "latitude":"50.45466",
-          "longitude":"30.5238",
-          "count":59
-        }
       ]
     };
   }
@@ -61,7 +47,6 @@ class DestinationsBox extends Component {
   render() {
     return (
       <div className="destinations">
-        <h1>Destinations List</h1>
         <DestinationList data={ this.state.responseData } />
       </div>
     );
