@@ -20,7 +20,8 @@ class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends A
   }
 
   override def receive = {
-    case Some(geo: GeoCoordinate) =>
+    case geo: GeoCoordinate =>
+      println(s"found $geo")
       notifySubscribers(updatedState(geo))
     case "subscribe" =>
       println("A SUBSCRIPTION request")
