@@ -4,14 +4,18 @@ import actors.SubscribableActor
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import play.api.libs.json.{JsArray, JsValue, Json}
-import protocols.{DestinationFeedAggregatorSubscribe, DestinationFeedAggregatorUnSubscribe}
+import protocols._
 
 import scala.concurrent.duration._
 
 class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends Actor with SubscribableActor[JsValue] {
   import formatters.JsonFormatters._
 
-  private var destinationCounter = Map.empty[GeoCoordinate, Int]
+  import context.dispatcher
+  private val sesstionTimeSeconds = 15
+  private val tick =
+    context.system.scheduler.schedule(2 seconds, 5 seconds, self, DestinationFeedAggregatorNotifySubscribers)
+  private var geoCoordinates = List.empty[GeoCoordinate]
 
   override def preStart() = {
     geoCoordinatesKafkaConsumer ! RegisterListener
@@ -19,12 +23,13 @@ class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends A
 
   override def postStop() = {
     geoCoordinatesKafkaConsumer ! UnRegisterListener
+    tick.cancel()
   }
 
   override def receive = {
     case geo: GeoCoordinate =>
       println(s"found $geo")
-      notifySubscribers(updatedState(geo))
+      updateGeoCoordinates(geo)
     case DestinationFeedAggregatorSubscribe =>
       println("A SUBSCRIPTION request")
       val subscriber = sender()
@@ -33,27 +38,38 @@ class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends A
     case DestinationFeedAggregatorUnSubscribe =>
       println("A UNSUBSCRIPTION request")
       unsubscribe(sender())
+    case DestinationFeedAggregatorNotifySubscribers =>
+      purgeOldResults()
+      notifySubscribers(getStateAsJson)
     case other =>
       println(s"Unhandled Message: $other")
   }
 
-  def updatedState(geo: GeoCoordinate): JsValue = {
-    updateCount(geo)
-    getStateAsJson
-  }
-
-  private def updateCount(geo: GeoCoordinate): Unit = {
-    val currentCount = destinationCounter.getOrElse(geo, 0)
-    destinationCounter = destinationCounter.updated(geo, currentCount + 1)
+  private def updateGeoCoordinates(geo: GeoCoordinate): Unit = {
+    geoCoordinates = geo :: geoCoordinates
   }
 
   private def getStateAsJson: JsValue = {
-    val counts: List[JsValue] = destinationCounter.map { case (g, c) =>
-      GeoCodeWithCount(g.country, g.city, g.latitude, g.longitude, c)
-    }.map(Json.toJson(_)).toList
+    val counts = geoCoordinates
+      .groupBy(_.city)
+      .values
+      .map((geos: List[GeoCoordinate]) => geos.head -> geos.length)
+      .map { case (g, c) =>
+        GeoCodeWithCount(g.country, g.city, g.latitude, g.longitude, c)
+      }
+      .map(Json.toJson(_))
+      .toList
     JsArray(counts)
   }
 
+  private def purgeOldResults() = {
+    val currentTime = System.currentTimeMillis()
+    geoCoordinates = geoCoordinates.filter(g => withinSessionTime(currentTime, g.requestTime))
+  }
+
+  private def withinSessionTime(currentTimeMills: Long, requestTimeMills: Long): Boolean = {
+    (currentTimeMills - requestTimeMills) < sesstionTimeSeconds * 1000
+  }
 }
 
 object DestinationFeedAggregator extends App {
