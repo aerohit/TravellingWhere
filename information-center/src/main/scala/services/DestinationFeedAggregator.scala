@@ -8,7 +8,8 @@ import protocols._
 
 import scala.concurrent.duration._
 
-class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends Actor with SubscribableActor[JsValue] {
+class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef)
+  extends Actor with SubscribableActor[DestinationFeedAggregatorUpdate[JsValue]] {
   import formatters.JsonFormatters._
 
   import context.dispatcher
@@ -40,7 +41,7 @@ class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends A
       unsubscribe(sender())
     case DestinationFeedAggregatorNotifySubscribers =>
       purgeOldResults()
-      notifySubscribers(getStateAsJson)
+      notifySubscribers(DestinationFeedAggregatorUpdate(getStateAsJson))
     case other =>
       println(s"Unhandled Message: $other")
   }

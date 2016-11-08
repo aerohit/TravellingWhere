@@ -5,3 +5,4 @@ sealed trait DestinationFeedAggregatorProtocol
 case object DestinationFeedAggregatorSubscribe extends DestinationFeedAggregatorProtocol
 case object DestinationFeedAggregatorUnSubscribe extends DestinationFeedAggregatorProtocol
 case object DestinationFeedAggregatorNotifySubscribers extends DestinationFeedAggregatorProtocol
+case class DestinationFeedAggregatorUpdate[T](json: T) extends DestinationFeedAggregatorProtocol
