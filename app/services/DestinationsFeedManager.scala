@@ -20,6 +20,10 @@ class DestinationsFeedManager extends Actor with SubscribableActor[SubscriptionF
     remote ! "subscribe"
   }
 
+  override def postStop() = {
+    remote ! "unsubscribe"
+  }
+
   def receive = {
     case SubscribeToFeed =>
       val subscriber = sender()
