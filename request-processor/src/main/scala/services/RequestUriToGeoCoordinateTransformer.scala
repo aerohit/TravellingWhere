@@ -8,7 +8,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.{StringDeserializer, StringSerializer}
 
-object UriRequestToRichObjectTransformer extends App {
+object RequestUriToGeoCoordinateTransformer extends App {
   implicit val system = ActorSystem("Request-Processor")
   implicit val materializer = ActorMaterializer()
 
@@ -27,8 +27,6 @@ object UriRequestToRichObjectTransformer extends App {
     .runWith(Producer.plainSink(producerSettings))
 
   def convertToRecord(geo: GeoCoordinate): ProducerRecord[String, String] = {
-    val serialized: String = geo.serializeToString()
-    println(s"The Serialized: $serialized")
-    new ProducerRecord[String, String]("geocoordinatedata", serialized)
+    new ProducerRecord[String, String]("geocoordinatedata", geo.serializeToString())
   }
 }
