@@ -25,7 +25,9 @@ class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends A
       notifySubscribers(updatedState(geo))
     case DestinationFeedAggregatorSubscribe =>
       println("A SUBSCRIPTION request")
+      val subscriber = sender()
       subscribe(sender())
+      subscriber ! getStateAsJson
     case DestinationFeedAggregatorUnSubscribe =>
       println("A UNSUBSCRIPTION request")
       unsubscribe(sender())
