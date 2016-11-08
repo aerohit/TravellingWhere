@@ -8,7 +8,7 @@ import protocols._
 
 import scala.concurrent.duration._
 
-class CityVisitorsAggregator(geoCoordinatesKafkaConsumer: ActorRef)
+class PageVisitorsAggregator(geoCoordinatesKafkaConsumer: ActorRef)
   extends Actor with SubscribableActor[DestinationFeedAggregatorUpdate[JsValue]] {
   import formatters.JsonFormatters._
 
@@ -29,7 +29,6 @@ class CityVisitorsAggregator(geoCoordinatesKafkaConsumer: ActorRef)
 
   override def receive = {
     case geo: GeoCoordinate =>
-      println(s"found $geo")
       updateGeoCoordinates(geo)
     case DestinationFeedAggregatorSubscribe =>
       println("A SUBSCRIPTION request")
@@ -73,7 +72,7 @@ class CityVisitorsAggregator(geoCoordinatesKafkaConsumer: ActorRef)
   }
 }
 
-object CityVisitorsAggregator extends App {
+object PageVisitorsAggregator extends App {
   implicit val system = ActorSystem("DestinationsFeedManager")
   implicit val materializer = ActorMaterializer()
   val geoCoordinatesKafkaConsumer = system.actorOf(
@@ -82,7 +81,7 @@ object CityVisitorsAggregator extends App {
   )
 
   val feedAggregator = system.actorOf(
-    Props(new CityVisitorsAggregator(geoCoordinatesKafkaConsumer)),
+    Props(new PageVisitorsAggregator(geoCoordinatesKafkaConsumer)),
     name = "DestinationFeedAggregatorActor"
   )
 
