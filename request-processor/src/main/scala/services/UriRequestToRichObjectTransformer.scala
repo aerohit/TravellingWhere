@@ -14,13 +14,13 @@ object UriRequestToRichObjectTransformer extends App {
 
   val consumerSettings = ConsumerSettings(system, new StringDeserializer, new StringDeserializer)
     .withBootstrapServers("localhost:9092")
-    .withGroupId("madebar")
+    .withGroupId("RequestPathConsumer")
     .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
 
   val producerSettings = ProducerSettings(system, new StringSerializer, new StringSerializer)
     .withBootstrapServers("localhost:9092")
 
-  Consumer.plainSource(consumerSettings, Subscriptions.topics("madebar"))
+  Consumer.plainSource(consumerSettings, Subscriptions.topics("requestpathdata"))
     .map(r => GeoCoordinatesService.enrich(r.value()))
     .collect { case Some(geo) => geo }
     .map(convertToRecord)
@@ -29,6 +29,6 @@ object UriRequestToRichObjectTransformer extends App {
   def convertToRecord(geo: GeoCoordinate): ProducerRecord[String, String] = {
     val serialized: String = geo.serializeToString()
     println(s"The Serialized: $serialized")
-    new ProducerRecord[String, String]("barmade", serialized)
+    new ProducerRecord[String, String]("geocoordinatedata", serialized)
   }
 }

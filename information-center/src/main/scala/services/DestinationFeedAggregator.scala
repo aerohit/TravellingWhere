@@ -4,7 +4,9 @@ import actors.SubscribableActor
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.stream.ActorMaterializer
 import play.api.libs.json.{JsArray, JsValue, Json}
-import protocols.{DestinationFeedAggregatorUnSubscribe, DestinationFeedAggregatorSubscribe}
+import protocols.{DestinationFeedAggregatorSubscribe, DestinationFeedAggregatorUnSubscribe}
+
+import scala.concurrent.duration._
 
 class DestinationFeedAggregator(geoCoordinatesKafkaConsumer: ActorRef) extends Actor with SubscribableActor[JsValue] {
   import formatters.JsonFormatters._

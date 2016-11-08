@@ -28,7 +28,7 @@ class HomeController @Inject()(
   }
 
   def cityPage(country: String, city: String) = Action { request =>
-    logQueue.publish("madebar", request.path)
+    logQueue.publish("requestpathdata", request.path)
     Ok(s"You requested $city in $country")
   }
 }

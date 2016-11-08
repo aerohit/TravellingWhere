@@ -32,7 +32,7 @@ class GeoCoordinatesKafkaConsumer(implicit val materializer: ActorMaterializer)
   }
 
   private def startConsumptionTask(): Future[Done] = {
-    Consumer.plainSource(consumerSettings, Subscriptions.topics("barmade"))
+    Consumer.plainSource(consumerSettings, Subscriptions.topics("geocoordinatedata"))
       .map(r => GeoCoordinate.parseFromString(r.value()))
       .collect { case Some(geo) => geo }
       .runForeach(notifySubscribers)
@@ -41,6 +41,6 @@ class GeoCoordinatesKafkaConsumer(implicit val materializer: ActorMaterializer)
   private val consumerSettings =
     ConsumerSettings(context.system, new StringDeserializer, new StringDeserializer)
       .withBootstrapServers("localhost:9092")
-      .withGroupId("madebar")
+      .withGroupId("GeocoordinateConsumer")
       .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
 }

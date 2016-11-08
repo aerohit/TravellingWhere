@@ -12,7 +12,8 @@ class KafkaProducerService(props: Properties) extends LogQueue {
   private val producer = new KafkaProducer[String, String](props)
 
   override def publish(topic: String, message: String) = {
-    val record = new ProducerRecord[String, String](topic, message)
+    val timeAndMessage = s"${System.currentTimeMillis()}|$message"
+    val record = new ProducerRecord[String, String](topic, timeAndMessage)
     producer.send(record)
   }
 }

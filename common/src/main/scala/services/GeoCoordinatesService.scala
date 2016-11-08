@@ -2,28 +2,30 @@ package services
 
 import scala.util.Try
 
-case class GeoCoordinate(country: String, city: String, latitude: String, longitude: String) {
+case class GeoCoordinate(requestTime: Long, country: String, city: String, latitude: String, longitude: String) {
   def serializeToString(): String =
-    s"$country|$city|$latitude|$longitude"
+    s"$requestTime|$country|$city|$latitude|$longitude"
 }
 
 object GeoCoordinate {
-  def apply(line: String): GeoCoordinate = {
-    val cols = line.split('|').toList
-    GeoCoordinate(cols(1), cols(2), cols(4), cols(5))
+  // geoCoordinateData would be of the following structure
+  // |/turkey/ankara/|Turkey|Ankara|TR|39.91987|32.85427
+  def apply(geoCoordinateData: String, requestTime: Long): GeoCoordinate = {
+    val cols = geoCoordinateData.split('|').toList
+    GeoCoordinate(requestTime, cols(1), cols(2), cols(4), cols(5))
   }
 
   def parseFromString(s: String): Option[GeoCoordinate] = {
     Try {
       val fields = s.split('|')
-      GeoCoordinate(fields(0), fields(1), fields(2), fields(3))
+      GeoCoordinate(fields(0).toLong, fields(1), fields(2), fields(3), fields(4))
     }.toOption
   }
 }
 
 object GeoCoordinatesService extends App {
 
-  def enrich(url: String) = {
+  def enrich(line: String) = {
     // TODO: figure out a way to not have to make this a local variable
     val lines =
       """
@@ -61,11 +63,12 @@ object GeoCoordinatesService extends App {
         |/croatia/zagreb/|Croatia|Zagreb|HR|45.81444|15.97798
       """.stripMargin.split("\n")
 
-    val key = url.split("places")(1)
+    val key = line.split("places")(1)
+    val requestTime = line.split('|')(0).toLong
     lines
       .find(_.startsWith(key))
-      .map(GeoCoordinate.apply)
+      .map(geoCoordinateData => GeoCoordinate.apply(geoCoordinateData, requestTime))
   }
 
-  println(enrich("/places/netherlands/amsterdam/"))
+  println(enrich("1478642324319|/places/netherlands/amsterdam/"))
 }
