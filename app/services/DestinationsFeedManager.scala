@@ -3,6 +3,7 @@ package services
 import actors.SubscribableActor
 import akka.actor._
 import play.api.libs.json.JsValue
+import protocols.{DestinationFeedAggregatorUnSubscribe, DestinationFeedAggregatorSubscribe}
 
 sealed trait DestinationsFeedProtocol
 
@@ -17,11 +18,11 @@ class DestinationsFeedManager extends Actor with SubscribableActor[SubscriptionF
     context.actorSelection("akka.tcp://DestinationsFeedManager@127.0.0.1:5150/user/DestinationFeedAggregatorActor")
 
   override def preStart() = {
-    remote ! "subscribe"
+    remote ! DestinationFeedAggregatorSubscribe
   }
 
   override def postStop() = {
-    remote ! "unsubscribe"
+    remote ! DestinationFeedAggregatorUnSubscribe
   }
 
   def receive = {
