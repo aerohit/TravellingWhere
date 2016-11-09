@@ -29,27 +29,28 @@ class PageVisitorsAggregator(geoCoordinatesKafkaConsumer: ActorRef)
 
   override def receive = {
     case geo: GeoCoordinate =>
-      updateGeoCoordinates(geo)
+      addGeoCoordinate(geo)
     case DestinationFeedAggregatorSubscribe =>
       println("A SUBSCRIPTION request")
       val subscriber = sender()
-      subscribe(sender())
-      subscriber ! getStateAsJson
+      subscribe(subscriber)
+      subscriber ! summarizeCurrentState
     case DestinationFeedAggregatorUnSubscribe =>
       println("A UNSUBSCRIPTION request")
       unsubscribe(sender())
     case DestinationFeedAggregatorNotifySubscribers =>
       purgeOldResults()
-      notifySubscribers(DestinationFeedAggregatorUpdate(getStateAsJson))
+      notifySubscribers(summarizeCurrentState)
     case other =>
       println(s"Unhandled Message: $other")
   }
 
-  private def updateGeoCoordinates(geo: GeoCoordinate): Unit = {
+  private def addGeoCoordinate(geo: GeoCoordinate): Unit = {
     geoCoordinates = geo :: geoCoordinates
   }
 
-  private def getStateAsJson: JsValue = {
+  // TODO: write it more neatly
+  private def summarizeCurrentState: DestinationFeedAggregatorUpdate[JsValue] = {
     val counts = geoCoordinates
       .groupBy(_.city)
       .values
@@ -59,7 +60,7 @@ class PageVisitorsAggregator(geoCoordinatesKafkaConsumer: ActorRef)
       }
       .map(Json.toJson(_))
       .toList
-    JsArray(counts)
+    DestinationFeedAggregatorUpdate(JsArray(counts))
   }
 
   private def purgeOldResults() = {
